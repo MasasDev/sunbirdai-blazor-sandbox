@@ -1,10 +1,14 @@
 using SunbirdAIBlazorSandbox.Components;
+using SunbirdAIBlazorSandbox.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddHttpClient<SpeechToTextService>();
+builder.Services.AddHttpClient<TranslationService>();
 
 var app = builder.Build();
 

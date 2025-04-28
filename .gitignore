@@ -482,3 +482,11 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Ignore the app setting files
+appsettings.json
+
+# Ignore the audios
+wwwroot/audio/
+
+

@@ -1,7 +1,114 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using SunbirdAIBlazorSandbox.Services
+@inject SpeechToTextService SpeechToTextService
+@inject TranslationService TranslationService
+@inject IWebHostEnvironment WebHostEnvironment
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container my-4">
+    <h1>Audio to Text Converter & Translator</h1>
+    <p class="mb-4">Convert your audio files to text and translate them using Sunbird AI API</p>
 
-Welcome to your new app.
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="ProcessAudio" disabled="@IsLoading">
+            @if (IsLoading)
+            {
+                <span>Processing...</span>
+            }
+            else
+            {
+                <span>Convert & Translate Audio</span>
+            }
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Error</h4>
+            <p>@ErrorMessage</p>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(TranscribedText))
+    {
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>Original Transcription (Luganda)</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text">@TranscribedText</p>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(TranslatedText))
+    {
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>English Translation</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text">@TranslatedText</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string TranscribedText { get; set; } = "";
+    private string TranslatedText { get; set; } = "";
+    private string ErrorMessage { get; set; } = "";
+    private bool IsLoading { get; set; } = false;
+
+    private async Task ProcessAudio()
+    {
+        IsLoading = true;
+        TranscribedText = "";
+        TranslatedText = "";
+        ErrorMessage = "";
+        
+        try
+        {
+            
+            string audioFilePath = Path.Combine(WebHostEnvironment.WebRootPath, "audio/audio3.mp3");
+            var transcriptionResult = await SpeechToTextService.ConvertToTextAsync(audioFilePath);
+            
+            if (transcriptionResult != null && !string.IsNullOrEmpty(transcriptionResult.Audio_Transcription))
+            {
+                TranscribedText = transcriptionResult.Audio_Transcription;
+                
+                var translationResult = await TranslationService.TranslateTextAsync(
+                    TranscribedText,
+                    sourceLanguage: "lug", 
+                    targetLanguage: "eng" 
+                );
+                
+                if (translationResult != null && !string.IsNullOrEmpty(translationResult.Output.TranslatedText))
+                {
+                    TranslatedText = translationResult.Output.TranslatedText;
+                }
+                else
+                {
+                    ErrorMessage = "Translation failed or returned empty result.";
+                }
+            }
+            else
+            {
+                ErrorMessage = "No transcription text was returned from the API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"Error details: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+}
